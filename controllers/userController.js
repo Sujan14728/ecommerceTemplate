@@ -1,25 +1,75 @@
-const { User } = require('../models');
+const jwt = require('jsonwebtoken');
+const bcrypt = require('bcryptjs');
+const db = require('../config/database');
 
-exports.createUser = async (req, res) => {
-  try {
-    const { username, email, password } = req.body;
-    const user = await User.create({ username, email, password });
-    res.status(201).json(user);
-  } catch (error) {
-    res.status(400).json({ error: error.message });
+exports.registerUser = async (req, res) => {
+  const { username, email, password } = req.body;
+  if (!username || !email || !password) {
+    return res
+      .status(401)
+      .json({ status: 'error', message: 'Invalid Credentials' });
   }
+
+  const salt = bcrypt.genSaltSync(10);
+  const hashedPassword = bcrypt.hashSync(password, salt);
+
+  const q = 'insert into users(`username`,`email`,`password`) value (?,?,?)';
+
+  db.query(q, [username, email, hashedPassword], (error, results) => {
+    if (error)
+      return res.status(500).json({ status: 'error', message: error.message });
+
+    return res.status(201).json({ status: 'success', data: results });
+  });
 };
 
-exports.getUser = async (req, res) => {
+exports.loginUser = async (req, res) => {
   try {
-    const user = await User.findByPk(req.params.id);
-    if (!user) {
-      return res.status(404).json({ error: 'User not found' });
+    if (!req.body.email || !req.body.password) {
+      return res
+        .status(400)
+        .json({ status: 'error', message: 'Email and password are required' });
     }
-    res.status(200).json(user);
+
+    const q = 'select * from users where email=?';
+
+    db.query(q, [req.body.email], (error, results) => {
+      if (results.length === 0) {
+        return res
+          .status(404)
+          .json({ status: 'error', message: 'User not found' });
+      }
+      console.log(results);
+
+      const isPasswordValid = bcrypt.compareSync(
+        req.body.password,
+        results[0].password
+      );
+
+      if (!isPasswordValid) {
+        return res
+          .status(401)
+          .json({ status: 'error', message: 'Invalid credentials' });
+      }
+
+      const payload = { userId: results[0].id, username: results[0].username };
+
+      const token = jwt.sign(payload, process.env.JWT_SECRET, {
+        expiresIn: '24h',
+      });
+
+      const { password, ...others } = results[0];
+
+      res.cookie('token', token, {
+        httpOnly: true,
+        maxAge: 60 * 60 * 24 * 1000,
+        secure: process.env.NODE_ENV === 'production',
+      });
+
+      res.status(200).json({ status: 'success', data: others, token });
+    });
   } catch (error) {
-    res.status(400).json({ error: error.message });
+    console.error('Error logging in user:', error);
+    res.status(500).json({ status: 'error', message: 'Server error' });
   }
 };
-
-// Add more user-related actions as needed
