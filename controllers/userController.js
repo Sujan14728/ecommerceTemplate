@@ -34,12 +34,15 @@ exports.loginUser = async (req, res) => {
     const q = 'select * from users where email=?';
 
     db.query(q, [req.body.email], (error, results) => {
+      if (error)
+        return res
+          .status(500)
+          .json({ status: 'error', message: error.message });
       if (results.length === 0) {
         return res
           .status(404)
           .json({ status: 'error', message: 'User not found' });
       }
-      console.log(results);
 
       const isPasswordValid = bcrypt.compareSync(
         req.body.password,
