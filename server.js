@@ -1,6 +1,7 @@
 const express = require('express');
 const cookieParser = require('cookie-parser');
 const cors = require('cors');
+const path = require('path');
 require('dotenv').config();
 
 const userRoutes = require('./routes/userRoutes');
@@ -11,7 +12,7 @@ const cartRoutes = require('./routes/cartRoutes');
 const paymentRoutes = require('./routes/paymentRoutes');
 const shippingRoutes = require('./routes/shippingRoutes');
 const reviewRoutes = require('./routes/reviewRoutes');
-
+const authRoutes = require('./routes/authRoutes');
 const app = express();
 
 // Middleware
@@ -27,6 +28,7 @@ app.use(
   })
 );
 app.use(cookieParser());
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // Routes
 app.use('/api/user', userRoutes);
@@ -38,6 +40,7 @@ app.use('/api/shipping', shippingRoutes);
 // app.use('/api/notification', notificationRoutes);
 app.use('/api/review', reviewRoutes);
 app.use('/api/admin', adminRoutes);
+app.use('/api/auth', authRoutes);
 // app.use('/api/analytic', analyticRoutes);
 // app.use('/api/search', searchRoutes);
 
