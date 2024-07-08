@@ -20,8 +20,18 @@ router.get('/:id', productController.getSingleProduct);
 //get all products
 router.get('/', productController.getProduct);
 
-router.delete('/:id', productController.deleteProduct);
+router.delete(
+  '/:id',
+  authenticateToken,
+  checkAdmin,
+  productController.deleteProduct
+);
 
-router.put('/:id', productController.updateProduct);
+router.put(
+  '/:id',
+  authenticateToken,
+  checkAdmin,
+  productController.updateProduct
+);
 
 module.exports = router;
