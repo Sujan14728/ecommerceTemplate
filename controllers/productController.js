@@ -62,7 +62,21 @@ exports.getProduct = async (req, res) => {
 };
 
 exports.getSingleProduct = async (req, res) => {
-  
+  const { id } = req.params;
+  try {
+    const q = 'select * from products where id=?';
+    const [product] = await db.promise().query(q, [id]);
+    if (product.length === 0)
+      return res
+        .status(404)
+        .json({ status: 'error', message: 'Product not found' });
+    const q2 = 'select image_path from product_images where product_id =?';
+    const [images] = await db.promise().query(q2, [product[0].id]);
+    product[0].images = images.map((img) => img.image_path);
+    res.status(200).json({ status: 'success', data: product[0] });
+  } catch (error) {
+    res.statu(500).json({ status: 'error', message: error.message });
+  }
 };
 
 exports.deleteProduct = async (req, res) => {};
