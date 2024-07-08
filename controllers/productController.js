@@ -79,6 +79,21 @@ exports.getSingleProduct = async (req, res) => {
   }
 };
 
-exports.deleteProduct = async (req, res) => {};
+exports.deleteProduct = async (req, res) => {
+  const { id } = req.params;
+  try {
+    const q = 'DELETE FROM products WHERE id = ?';
+    const [result] = await db.promise().query(q, [id]);
+    if (result.affectedRows === 0)
+      return res
+        .status(404)
+        .json({ status: 'error', message: 'Product not found' });
+    res
+      .status(200)
+      .json({ status: 'success', message: 'Product deleted successfully' });
+  } catch (error) {
+    res.status(500).json({ status: 'error', message: error.message });
+  }
+};
 
 exports.updateProduct = async (req, res) => {};
