@@ -38,9 +38,32 @@ exports.addProduct = async (req, res) => {
   });
 };
 
-exports.getProduct = async (req, res) => {};
+exports.getProduct = async (req, res) => {
+  try {
+    const start = parseInt(req.body.start) || 0;
+    const limit = parseInt(req.body.limit) || 10;
 
-exports.getSingleProduct = async (req, res) => {};
+    const q = `select * from products limit ? offset ?`;
+
+    const [productResults] = await db.promise().query(q, [limit, start]);
+
+    const productWithImages = await Promise.all(
+      productResults.map(async (product) => {
+        const q2 = 'select image_path from product_images where product_id=?';
+        const [imageResults] = await db.promise().query(q2, [product.id]);
+        product.images = imageResults.map((img) => img.image_path);
+        return product;
+      })
+    );
+    res.status(200).json({ status: 'success', data: productWithImages });
+  } catch (error) {
+    res.status(500).json({ status: 'error', message: error.message });
+  }
+};
+
+exports.getSingleProduct = async (req, res) => {
+  
+};
 
 exports.deleteProduct = async (req, res) => {};
 
