@@ -31,6 +31,7 @@ router.put(
   '/:id',
   authenticateToken,
   checkAdmin,
+  upload.array('images', 10),
   productController.updateProduct
 );
 

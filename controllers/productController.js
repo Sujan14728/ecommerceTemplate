@@ -96,4 +96,52 @@ exports.deleteProduct = async (req, res) => {
   }
 };
 
-exports.updateProduct = async (req, res) => {};
+exports.updateProduct = async (req, res) => {
+  const { id } = req.params;
+  const { name, description, price, quantity } = req.body;
+  try {
+    const q = 'select * from products where id=?';
+    const [product] = await db.promise().query(q, [id]);
+    if (product.length === 0)
+      return res
+        .status(404)
+        .json({ status: 'error', message: 'Product not found' });
+    const updatedProduct = {
+      name: name || product[0].name,
+      description: description || product[0].description,
+      price: price || product[0].price,
+      quantity: quantity || product[0].quantity,
+    };
+    const q2 =
+      'update products set name=?, description=?,price=?,quantity=? where id=?';
+    await db
+      .promise()
+      .query(q2, [
+        updatedProduct.name,
+        updatedProduct.description,
+        updatedProduct.price,
+        updatedProduct.quantity,
+        id,
+      ]);
+
+    if (req.files.length > 0) {
+      await db
+        .promise()
+        .query('delete from product_images where product_id=?', [id]);
+      const imagePaths = req.files.map((file) => `/uploads/${file.filename}`);
+      for (const imagePath of imagePaths) {
+        await db
+          .promise()
+          .query(
+            'insert into product_images (product_id,image_path) values(?,?)',
+            [id, imagePath]
+          );
+      }
+    }
+    res
+      .status(200)
+      .json({ status: 'success', message: 'Product updated successfully' });
+  } catch (error) {
+    res.status(500).json({ status: 'error', message: error.message });
+  }
+};
